@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lockfile-lint:
     name: Validate package-lock.json
@@ -39,7 +43,7 @@ jobs:
         # Pinned by name only (no lockfile-lint in devDependencies) so that a
         # compromised dev tree cannot suppress this check.
         run: >
-          npx --yes lockfile-lint@4.14.0
+          npx --yes --ignore-scripts lockfile-lint@4.14.0
           --type npm
           --path package-lock.json
           --validate-https

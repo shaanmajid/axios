@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-run-vitest:
     name: Build and run vitest
@@ -43,7 +47,7 @@ jobs:
         run: npm run build
 
       - name: Install Playwright with deps
-        run: npx playwright install --with-deps
+        run: ./node_modules/.bin/playwright install --with-deps chromium firefox webkit
 
       - name: Run unit tests
         run: npm run test:vitest:unit
@@ -95,7 +99,7 @@ jobs:
 
       - name: Install packed axios
         working-directory: tests/smoke/cjs
-        run: npm install --no-save ../../../artifacts/axios-*.tgz
+        run: npm install --ignore-scripts --no-save ../../../artifacts/axios-*.tgz
 
       - name: Run CJS smoke tests
         working-directory: tests/smoke/cjs
@@ -134,7 +138,7 @@ jobs:
 
       - name: Install packed axios
         working-directory: tests/smoke/esm
-        run: npm install --no-save ../../../artifacts/axios-*.tgz
+        run: npm install --ignore-scripts --no-save ../../../artifacts/axios-*.tgz
 
       - name: Run ESM smoke tests
         working-directory: tests/smoke/esm
@@ -173,7 +177,7 @@ jobs:
 
       - name: Install packed axios
         working-directory: tests/module/cjs
-        run: npm install --no-save ../../../artifacts/axios-*.tgz
+        run: npm install --ignore-scripts --no-save ../../../artifacts/axios-*.tgz
 
       - name: Run CJS module tests
         working-directory: tests/module/cjs
@@ -212,7 +216,7 @@ jobs:
 
       - name: Install packed axios
         working-directory: tests/module/esm
-        run: npm install --no-save ../../../artifacts/axios-*.tgz
+        run: npm install --ignore-scripts --no-save ../../../artifacts/axios-*.tgz
 
       - name: Run ESM module tests
         working-directory: tests/module/esm
@@ -288,11 +292,19 @@ jobs:
   bump-version-and-create-pr:
     name: Bump version and create PR
     needs:
-      [build-and-run-vitest, cjs-smoke-tests, esm-smoke-tests, bun-smoke-tests, deno-smoke-tests]
+      [
+        build-and-run-vitest,
+        cjs-smoke-tests,
+        esm-smoke-tests,
+        cjs-module-tests,
+        esm-module-tests,
+        bun-smoke-tests,
+        deno-smoke-tests
+      ]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write # Creates the release-prep branch commit.
+      pull-requests: write # Opens the release-prep pull request.
     steps:
       - name: Checkout repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -324,12 +336,12 @@ jobs:
           TYPE="${INPUT_TYPE}"
           BETA="${INPUT_BETA}"
           if [ "$TYPE" = "auto" ]; then
-            npm version $(npm version | grep -Eo 'patch|minor|major' | head -1)
+            npm version "$(npm version | grep -Eo 'patch|minor|major' | head -1)" --ignore-scripts
           else
             if [ "$BETA" = "true" ]; then
-              npm version $TYPE --preid=beta
+              npm version "$TYPE" --preid=beta --ignore-scripts
             else
-              npm version $TYPE
+              npm version "$TYPE" --ignore-scripts
             fi
           fi
           VERSION=$(node -p "require('./package.json').version")
