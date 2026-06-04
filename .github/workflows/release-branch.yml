@@ -288,7 +288,15 @@ jobs:
   bump-version-and-create-pr:
     name: Bump version and create PR
     needs:
-      [build-and-run-vitest, cjs-smoke-tests, esm-smoke-tests, bun-smoke-tests, deno-smoke-tests]
+      [
+        build-and-run-vitest,
+        cjs-smoke-tests,
+        esm-smoke-tests,
+        cjs-module-tests,
+        esm-module-tests,
+        bun-smoke-tests,
+        deno-smoke-tests
+      ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
