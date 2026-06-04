@@ -8,11 +8,16 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   zizmor:
+    name: Analyze workflows
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
+      security-events: write # Needed to upload zizmor SARIF results.
     steps:
       - name: Checkout repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
